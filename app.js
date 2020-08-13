@@ -17,6 +17,11 @@ app.use(bodyParser.json())
 // Registering middleware
 // We want to use middleware: 'body-parser' that ensures that we 
 // parse the request bodies of incoming request. 
+// bodyParser.json() will parse any incoming requests body and 
+// extract any Json data which is in there, convert it to regular javascript
+// data structure like objects and arrays and then call next automatically
+// so that we reach the next middleware in line which are our own custom routes
+// and then also add this JSON data there.
 
 // The following means that the routes which we configured 
 // below are added as middleware in app.js
@@ -59,7 +64,4 @@ app.use((error, req, res, next) => {
     // 
     res.json({message: error.message || 'An unknown error occured!'});
 })
-
-
-
 app.listen(5000);

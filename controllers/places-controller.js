@@ -100,7 +100,7 @@ const updatePlace = (req, res, next) => {
     }
     // We need the id of the place we want to update, and that is encoded into the URL
     // so we have a mixture of some data being part of the URL and some data being part 
-    // of the request body. We encode the identifying criteria using the ID from the URL and
+    // of the request body. We encode the identifying criteria using the ID from the URL
     // and the data with which we should then work into the request body. 
     const { title, description } = req.body;
     const placeId = req.params.pid; 
