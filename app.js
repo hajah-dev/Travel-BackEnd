@@ -68,7 +68,7 @@ app.use((error, req, res, next) => {
 // We first want to establish the connection to the database, if this connection is
 // successful then we want to start our back endserver in case the connection in the
 // database failed, we don't need the server because we will throw an error instead. 
-mongoose.connect('mongodb+srv://Haja:Physique200605@cluster0.k6kun.mongodb.net/Place?retryWrites=true&w=majority')
+mongoose.connect('mongodb+srv://************@cluster0.k6kun.mongodb.net/Place?retryWrites=true&w=majority')
         .then(() => {
             app.listen(5000);
         })
