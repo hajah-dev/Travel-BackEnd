@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const placesRoutes = require('./routes/places-routes');
 const HttpError = require('./models/http-error');
 const usersRoutes = require('./routes/users-route');
+const mongoose = require('mongoose');
 
 const app = express();
 
@@ -64,4 +65,11 @@ app.use((error, req, res, next) => {
     // 
     res.json({message: error.message || 'An unknown error occured!'});
 })
-app.listen(5000);
+// We first want to establish the connection to the database, if this connection is
+// successful then we want to start our back endserver in case the connection in the
+// database failed, we don't need the server because we will throw an error instead. 
+mongoose.connect('mongodb+srv://Haja:Physique200605@cluster0.k6kun.mongodb.net/Place?retryWrites=true&w=majority')
+        .then(() => {
+            app.listen(5000);
+        })
+        .catch(err => console.log(err));
