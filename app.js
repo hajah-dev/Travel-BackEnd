@@ -4,6 +4,7 @@ const placesRoutes = require('./routes/places-routes');
 const HttpError = require('./models/http-error');
 const usersRoutes = require('./routes/users-route');
 const mongoose = require('mongoose');
+const dataNameAndPassword = require('./database_info/data')
 
 const app = express();
 
@@ -68,7 +69,7 @@ app.use((error, req, res, next) => {
 // We first want to establish the connection to the database, if this connection is
 // successful then we want to start our back endserver in case the connection in the
 // database failed, we don't need the server because we will throw an error instead. 
-mongoose.connect('mongodb+srv://************@cluster0.k6kun.mongodb.net/Place?retryWrites=true&w=majority')
+mongoose.connect(`mongodb+srv://${dataNameAndPassword}@cluster0.k6kun.mongodb.net/Place?retryWrites=true&w=majority`)
         .then(() => {
             app.listen(5000);
         })
