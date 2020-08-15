@@ -18,35 +18,57 @@ let DUMMY_PLACES = [
     }
 ]
 
-const getPlaceById = (req, res, next) => {
+const getPlaceById = async (req, res, next) => {
     // The params property we use below holds an object
     // where our dynamic segments (pid:) will exists as keys
     // and the value will be concrete value the user who sent
     // the request entered. 
     const placeId = req.params.pid;
-    const place = DUMMY_PLACES.find(p => {
-        return p.id === placeId;
-    });
+    // const place = DUMMY_PLACES.find(p => {
+    //     return p.id === placeId;
+    // });
+    let place
+    try {
+        place = await Place.findById(placeId);
+    } catch (err) {
+        const error = new HttpError(
+            'Something went wrong, could not find a plcae', 500
+        );
+        return next(error);
+    }
     
     if(!place){
-        throw new HttpError('Could not find a place for the provided id', 404);; 
+        const error =  new HttpError('Could not find a place for the provided id', 404);; 
         // ou return next (error) // with error = new HttpError('Could...', 404)
     } 
-    res.json({place}); // ==> {place} ==> {place: place}
+    res.json({place: place.toObject({ getters: true })}); 
+    // the expression above is for modifying the id expression from mongoDb, 
+    // to put off the underscoe '_' and convert place in object
 }
 
-const getPlacesByUserId = (req, res, next) => {
+const getPlacesByUserId = async (req, res, next) => {
     const userId = req.params.uid;
     
     // filter will return us a new array full of elements that fulfill the criteria 
     // it takes as argument
-    const places = DUMMY_PLACES.filter(p =>  p.creator === userId);
+    // const places = DUMMY_PLACES.filter(p =>  p.creator === userId);
+    let places
+    try {
+        places = await Place.find({ creator: userId})   
+        // the find above returns a cursor
+    } catch(err) {
+        const error = new HttpError(
+            'Fetching places failed, please try again later', 500
+        )
+        return next(error);
+    }
+    
     if(!places || places.length === 0){
         // If we are in an asynchronous code (when we use a database),
         // we have to call next(error). If we are in synchronous middleware 
         return next (new HttpError('Could not find places for the provided user id', 404));
     } 
-    res.json({places});
+    res.json({places: places.map(place => place.toObject({ getters: true}))});
 }
 
 const createPlace = async (req, res, next) => {
@@ -114,7 +136,7 @@ const createPlace = async (req, res, next) => {
     res.status(201).json({place: createdPlace})
 }
 
-const updatePlace = (req, res, next) => {  
+const updatePlace = async (req, res, next) => {  
     const errors = validationResult(req);
     if(!errors.isEmpty()){
         console.log(errors)
@@ -127,29 +149,55 @@ const updatePlace = (req, res, next) => {
     const { title, description } = req.body;
     const placeId = req.params.pid; 
     // pid is from router.patch('/:pid'...) in @places-routes.js
-    const updatedPlace = {...DUMMY_PLACES.find(p => p.id === placeId)};
+    // const updatedPlace = {...DUMMY_PLACES.find(p => p.id === placeId)};
     // Explication of the code above: 
     // In the code above we want to create a copy of the place we found with
     // the specifying id, change that copy and only once that copy is finished, 
     // we want to change the entire place in our array of places with that updated copy.
     // To create the copy, we used a spread operator that created a new object and copies
     // all the key-value pair of the old object as key-value pairs into the new object 
-    const placeIndex = DUMMY_PLACES.findIndex(p => p.id === placeId);
-    updatedPlace.title = title;
-    updatedPlace.description = description;
+    // const placeIndex = DUMMY_PLACES.findIndex(p => p.id === placeId);
     
-    DUMMY_PLACES[placeIndex] = updatedPlace;
-    res.status(200).json({place: updatedPlace});
+    let place;
+    try {
+        place = await Place.findById(placeId);
+    } catch (err){
+        const error = new HttpError ('Something went wrong, could not update place', 500)
+        return next (error)
+    }
+    place.title = title;
+    place.description = description;
+    try {
+        await place.save();
+    } catch(err){
+        const error = new HttpError('Something went wrong, could not update place', 500);
+        return next(error);   
+    }
+    // DUMMY_PLACES[placeIndex] = updatedPlace;
+    res.status(200).json({place: place.toObject({ getters: true})});
 }
 
-const deletePlace = (req, res, next) => {
+const deletePlace = async (req, res, next) => {
     const placeId = req.params.pid;
-    if(!DUMMY_PLACES.find(p => p.id === placeId)){
+    /*if(!DUMMY_PLACES.find(p => p.id === placeId)){
         throw new HttpError('Could not find a place for that id', 404);
+    }*/
+    let place;
+    try {
+        place = await Place.findById(placeId);
+    } catch(err){
+        const error = new HttpError ('Something went wrong, could not delete place', 500)
+        return next(error)
+    }
+    try {
+        place.remove()
+    } catch(err){
+        const er = new HttpError('Something went wrong, could not update place', 500);
+        return next(er);
     }
     // The code below means that only the elements which statisfy
     // the condition will be store in the new array.
-    DUMMY_PLACES = DUMMY_PLACES.filter(p => p.id !== placeId);
+    // DUMMY_PLACES = DUMMY_PLACES.filter(p => p.id !== placeId);
     res.status(200).json({message: 'Deleted place successfully'})
 }
 
