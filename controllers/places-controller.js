@@ -3,20 +3,22 @@ const {v4: uuidv4} = require('uuid');
 const {validationResult} = require('express-validator');
 const getCoordsForAddress = require('../util/location');
 const Place = require('../models/place');
+const User = require('../models/user')
+const mongoose = require('mongoose');
 
-let DUMMY_PLACES = [
-    {
-        id: 'p1',
-        title: 'Empire State Building',
-        description: 'One of the most famous sky scrapers',
-        location: {
-            lat: 40.75,
-            lng: -73.99
-        },
-        address: '20 W 34th St, New Yorl, NY 10001',
-        creator: 'u1'
-    }
-]
+// let DUMMY_PLACES = [
+//     {
+//         id: 'p1',
+//         title: 'Empire State Building',
+//         description: 'One of the most famous sky scrapers',
+//         location: {
+//             lat: 40.75,
+//             lng: -73.99
+//         },
+//         address: '20 W 34th St, New Yorl, NY 10001',
+//         creator: 'u1'
+//     }
+// ]
 
 const getPlaceById = async (req, res, next) => {
     // The params property we use below holds an object
@@ -47,6 +49,12 @@ const getPlaceById = async (req, res, next) => {
 }
 
 const getPlacesByUserId = async (req, res, next) => {
+    // To display all places a user has we can use populate() syntax:
+    // let userWithPlaces
+    /* try {
+        userWithPlaces = await User.findById(userId).populate('places');
+    } catch . . .
+    }*/
     const userId = req.params.uid;
     
     // filter will return us a new array full of elements that fulfill the criteria 
@@ -120,8 +128,42 @@ const createPlace = async (req, res, next) => {
         creator
     })
     
+    let user;
+    try{
+        user = await User.findById(creator)
+    }catch (err) {
+        const error = new HttpError(
+            'Creating place failed, please try again', 500
+        )
+        return next(error);
+    }
+    if(!user) {
+        const error = new HttpError('Could not find user', 404)
+        return next(error);
+    }
+    console.log(user);
+    
     try {
-        await createdPlace.save();
+        // Transactions allows us to perform multiple operations in isolation
+        // of each other. Transaction are basically bult on sessions. So to work 
+        // with transaction we have to start a session, then we can initiate the transaction
+        // and once the transaction is successfull, the session is finished and the transactions
+        // are committed.
+        // The following sessions start when we create new place. 
+        const sess =  await mongoose.startSession();
+        sess.startTransaction();
+        // With the following code we create a new place and automatically create the unique ID for our
+        // place 
+        await createdPlace.save({session: sess})
+        // Below, push is a method used by mongoose which allows mongoose th behind the scene establish
+        // the connection between the two models we are refering. Behind the scene, Mongo grab the created
+        // placeID that's an integrated mongoose feature and add it to the place feed of the user. So it's
+        // only adds the placeID  
+        user.places.push(createdPlace)
+        await user.save({ session: sess});
+        // Only if this code below is successful then the place will be created
+        // and the user will be updated
+        await sess.commitTransaction();
     } catch (err) {
         const error = new HttpError(
             'Creating place failed, please try again',
@@ -183,13 +225,34 @@ const deletePlace = async (req, res, next) => {
     }*/
     let place;
     try {
-        place = await Place.findById(placeId);
+        place = await Place.findById(placeId).populate('creator');
+        // populate() allows us to refer to a document stored in another
+        // collection and to work with data in that existing document
+        // of that other collection. Only if there is a connection
+        // between user (thank to the ref we defined) and place (thank to the ref we defined)
+        // then we are allowed to use populate(), otherwise, hte populate method
+        // would not work. 
+        // The populate method take an argument which is the document wheere we want to change
+        // something and move in this document. 
     } catch(err){
         const error = new HttpError ('Something went wrong, could not delete place', 500)
         return next(error)
     }
+    
+    if(!place) {
+        const error = new HttpError('Could not find place for this ID', 404)
+        return next(error);
+    }
+    
     try {
-        place.remove()
+        const sess = await mongoose.startSession();
+        sess.startTransaction()
+        await place.remove({session: sess})
+        // pull will automatically removes the ID. This code below
+        // should remove the place form the user
+        place.creator.places.pull(place)
+        await place.creator.save({session:sess})
+        await sess.commitTransaction()
     } catch(err){
         const er = new HttpError('Something went wrong, could not update place', 500);
         return next(er);

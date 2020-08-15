@@ -10,7 +10,11 @@ const userSchema = new Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true, minlength: 6 },
     image: { type: String, required: true },
-    places: { type: String, required: true }
+    // In the code below, the ref: 'Place' is the name we attributed to
+    // placeSchema in @place.js. And we wrapp the places property inside
+    // an array because this is how we tell mongoose that in documents 
+    // based on the schema we can have multiple places entries 
+    places: [{ type: mongoose.Types.ObjectId, required: true, ref: 'Place' }]
 })
 
 // To add the uniqueValidator to the Schema:

@@ -14,6 +14,12 @@ const placeSchema = new Schema ({
         lat: { type: Number, required: true },
         lng: { type: Number, required: true }
     },
-    creator: { type: String, required: true }
+    // The ref: 'User' we used below is the name we attributed to the UserSchema
+    // from @user.js  
+    creator: { type: mongoose.Types.ObjectId, required: true, ref: 'User' }
 })
 module.exports = mongoose.model('Place', placeSchema);
+
+// If we create a new place, we want to make sure that this place
+// will contain the userId. So we wanna make sure that this place
+// will also be added to the user documents. 
