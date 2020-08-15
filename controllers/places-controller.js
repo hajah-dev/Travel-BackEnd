@@ -121,7 +121,7 @@ const createPlace = async (req, res, next) => {
     })
     
     try {
-        await  createdPlace.save();
+        await createdPlace.save();
     } catch (err) {
         const error = new HttpError(
             'Creating place failed, please try again',
@@ -129,7 +129,6 @@ const createPlace = async (req, res, next) => {
         );
         return next(error)
     }
-   
     
     //DUMMY_PLACES.push(createdPlace); <--- before 
     // In the following we return an object 'place' that holds the property createdPlace
@@ -140,7 +139,7 @@ const updatePlace = async (req, res, next) => {
     const errors = validationResult(req);
     if(!errors.isEmpty()){
         console.log(errors)
-        throw new HttpError('Invalid inputs passed, please check your data', 422);
+        return next (new HttpError('Invalid inputs passed, please check your data', 422));
     }
     // We need the id of the place we want to update, and that is encoded into the URL
     // so we have a mixture of some data being part of the URL and some data being part 

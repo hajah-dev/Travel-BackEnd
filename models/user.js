@@ -10,7 +10,7 @@ const userSchema = new Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true, minlength: 6 },
     image: { type: String, required: true },
-    places: { typpe: String, required: true }
+    places: { type: String, required: true }
 })
 
 // To add the uniqueValidator to the Schema:
@@ -19,4 +19,4 @@ userSchema.plugin(uniqueValidator)
 // fast as possible in our database with unique. And we made
 // sure that we can only create a new user if the email doesn't
 // exist already with our unique validator package. 
-module.exports = mongoose.models('Userxx', userSchema)
+module.exports = mongoose.model('User', userSchema)
