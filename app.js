@@ -25,6 +25,28 @@ app.use(bodyParser.json())
 // so that we reach the next middleware in line which are our own custom routes
 // and then also add this JSON data there.
 
+// A way to avoid the CORS error
+app.use((req, res, next) => {
+    // The idea here is that we don't send back a response but we just add certain
+    // headers to the response so that when later a response is sent back from our 
+    // more specific routes it does have these headers attached.
+    
+    // 1st Header --> this allows us to control which domains should have access, so
+    // where the browser should allow this. It allows any domains to send requests
+    // but it's still not enough
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    // 2nd Header --> Controls which headers these requests sent by the
+    // browser may have 
+    res.setHeader(
+        'Access-Control-Allow-Headers', 
+        'Origin, X-Requested-With, Content-Type, Accept, Authorization')
+    // 3rd Header --> Controls which HTTP methods may be used on the front end
+    // or maybe attached to incoming requests. 
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE')
+    next();
+})
+
+
 // The following means that the routes which we configured 
 // below are added as middleware in app.js
 app.use('/api/places', placesRoutes);
